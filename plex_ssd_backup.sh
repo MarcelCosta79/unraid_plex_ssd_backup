@@ -48,29 +48,22 @@ if [ "$plex_running" = "false" ]
 then
     
 	echo "Backing up Plex"
-    
 	rsync -a /mnt/disks/nvme/plex_appdata/plex /mnt/user/appdata
-	
 	echo "Starting Plex"
-    docker start plex
-	
+   	docker start plex
 	# wait 5 seconds
-    sleep 5
-	
+	sleep 5
 	# Get the state of the docker
-    plex_running=`docker inspect -f '{{.State.Running}}' plex`
-    echo "Plex running: $plex_running"
-	
+   	plex_running=`docker inspect -f '{{.State.Running}}' plex`
+  	echo "Plex running: $plex_running"
 	if [ "$plex_running" = "false" ]
 	then
 		echo "Plex failed to restart"
 		/usr/local/emhttp/webGui/scripts/notify -i warning -s "Plex failed to restart."
 	fi
-	
 	echo "Compressing Plex"
 	cd $backup_dir
-    tar -cpf plex_backup_$now.tar /mnt/user/appdata/plex
-
+	tar -cpf plex_backup_$now.tar /mnt/user/appdata/plex
 fi
 
 # Get the number of files in the backup directory
@@ -93,8 +86,6 @@ end_h=`date +%T`
 echo "Script end at: $end_h"
 duration=$SECONDS
 echo "$(($duration / 60))m and $(($duration % 60))s elapsed."
-
-
 
 # Push a notification to the Unraid GUI if the backup failed of passed
 if [[ $? -eq 0 ]]; then
