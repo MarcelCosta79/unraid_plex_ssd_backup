@@ -16,7 +16,7 @@ For either option you will want to edit the following variables at the beginning
 The following is the steps the script goes through to backup Plex.
 1. Plex docker is stopped
 2. Wait for 30 seconds then check if the docker is stopped
-3. If the container is stopped, start rsync. It'll clone the plex data into appdata original folder for an instant recovery in case of drive failure.
+3. If the container is stopped, starts rsync. It'll clone the plex folder into appdata original folder for an instant recovery in case of drive failure.
    If not, attempt to stop the constainer up to 5 times  
    If that fails, the script exits with status 1 and pushes a warning to the Unraid GUI
 4. Once the rsync has finished, start the Plex docker again.
