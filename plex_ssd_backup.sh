@@ -1,13 +1,14 @@
 #!/bin/bash
 
 # variables
-start_m=`date +%M`
-start_s=`date +%S`
-echo "Script start: $start_m:$start_s"
+start_h=`date +%T`
+SECONDS=0
 
-now=$(date +"%m_%d_%Y-%H_%M")
-plex_library_dir="/mnt/disks/Plex_SSD_194051800713/plex/Library/"
-backup_dir="/mnt/user/backup_share/plex"
+echo "Script start: $start_h"
+
+now=$(date +"%d_%m_%Y-%H_%M")
+plex_library_dir="/mnt/disks/nvme/plex_appdata/plex"
+backup_dir="/mnt/user/mount_mergerfs/saturn/backups/plex_appdata"
 num_backups_to_keep=3
 
 # Stop the container
@@ -45,18 +46,38 @@ done
 # The tar command shows progress
 if [ "$plex_running" = "false" ]
 then
-    echo "Compressing and backing up Plex"
-    cd $plex_library_dir
-    tar -czf - Application\ Support/ -P | pv -s $(du -sb Application\ Support/ | awk '{print $1}') | gzip > $backup_dir/plex_backup_$now.tar.gz
-    echo "Starting Plex"
+    
+	echo "Backing up Plex"
+    
+	rsync -a /mnt/disks/nvme/plex_appdata/plex /mnt/user/appdata
+	
+	echo "Starting Plex"
     docker start plex
+	
+	# wait 5 seconds
+    sleep 5
+	
+	# Get the state of the docker
+    plex_running=`docker inspect -f '{{.State.Running}}' plex`
+    echo "Plex running: $plex_running"
+	
+	if [ "$plex_running" = "false" ]
+	then
+		echo "Plex failed to restart"
+		/usr/local/emhttp/webGui/scripts/notify -i warning -s "Plex failed to restart."
+	fi
+	
+	echo "Compressing Plex"
+	cd $backup_dir
+    tar -cpf plex_backup_$now.tar /mnt/user/appdata/plex
+
 fi
 
 # Get the number of files in the backup directory
-num_files=`ls $backup_dir/plex_backup_*.tar.gz | wc -l`
+num_files=`ls $backup_dir/plex_backup_*.tar | wc -l`
 echo "Number of files in directory: $num_files"
 # Get the full path of the oldest file in the directory
-oldest_file=`ls -t $backup_dir/plex_backup_*.tar.gz | tail -1`
+oldest_file=`ls -t $backup_dir/plex_backup_*.tar | tail -1`
 echo $oldest_file
 
 # After the backup, if the number of files is larger than the number of backups we want to keep
@@ -67,16 +88,20 @@ then
     rm $oldest_file
 fi
 
-end_m=`date +%M`
-end_s=`date +%S`
-echo "Script end: $end_m:$end_s"
+end_h=`date +%T`
 
-runtime_m=$((end_m-start_m))
-runtime_s=$((end_s-start_s))
-echo "Script runtime: $runtime_m:$runtime_s"
+echo "Script end at: $end_h"
+duration=$SECONDS
+echo "$(($duration / 60))m and $(($duration % 60))s elapsed."
+
+
+
 # Push a notification to the Unraid GUI if the backup failed of passed
 if [[ $? -eq 0 ]]; then
-  /usr/local/emhttp/webGui/scripts/notify -i normal -s "Plex Backup completed in $runtime"
+  /usr/local/emhttp/webGui/scripts/notify -i normal -s "Plex Backup completed in $(($duration / 60))m and $(($duration % 60))s"
 else
   /usr/local/emhttp/webGui/scripts/notify -i warning -s "Plex Backup failed. See log for more details."
 fi
+
+
+
