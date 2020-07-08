@@ -2,11 +2,13 @@
 
 # variables
 start_h=`date +%T`
+now=$(date +"%d_%m_%Y-%H_%M")
 SECONDS=0
 
+#Start time
 echo "Script start: $start_h"
 
-now=$(date +"%d_%m_%Y-%H_%M")
+
 plex_library_dir="/mnt/disks/nvme/plex_appdata/plex"
 backup_dir="/mnt/user/mount_mergerfs/saturn/backups/plex_appdata"
 num_backups_to_keep=3
@@ -15,8 +17,8 @@ num_backups_to_keep=3
 docker stop plex
 echo "Stopping plex"
 
-# wait 30 seconds
-sleep 30
+# wait 20 seconds
+sleep 20
 
 # Get the state of the docker
 plex_running=`docker inspect -f '{{.State.Running}}' plex`
@@ -29,7 +31,7 @@ do
     fail_counter=$((fail_counter+1))
     docker stop plex
     echo "Stopping Plex attempt #$fail_counter"
-    sleep 30
+    sleep 20
     plex_running=`docker inspect -f '{{.State.Running}}' plex`
     # Exit with an error code if the container won't stop
     # Restart plex and report a warning to the Unraid GUI
@@ -43,7 +45,6 @@ do
 done
 
 # Once the container is stopped, backup the Application Support directory and restart the container
-# The tar command shows progress
 if [ "$plex_running" = "false" ]
 then
     
