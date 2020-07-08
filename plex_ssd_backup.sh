@@ -49,7 +49,9 @@ if [ "$plex_running" = "false" ]
 then
     
 	echo "Backing up Plex"
-	rsync -a /mnt/disks/nvme/plex_appdata/plex /mnt/user/appdata
+	cd $backup_dir
+	tar -cpf plex_backup_$now.tar $plex_library_dir
+    
 	echo "Starting Plex"
    	docker start plex
 	# wait 5 seconds
@@ -62,9 +64,7 @@ then
 		echo "Plex failed to restart"
 		/usr/local/emhttp/webGui/scripts/notify -i warning -s "Plex failed to restart."
 	fi
-	echo "Compressing Plex"
-	cd $backup_dir
-	tar -cpf plex_backup_$now.tar /mnt/user/appdata/plex
+
 fi
 
 # Get the number of files in the backup directory
@@ -94,6 +94,3 @@ if [[ $? -eq 0 ]]; then
 else
   /usr/local/emhttp/webGui/scripts/notify -i warning -s "Plex Backup failed. See log for more details."
 fi
-
-
-
